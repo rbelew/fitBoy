@@ -24,12 +24,8 @@ if HostName.startswith('hancock'): # MONK
 	INTERNAL_IPS = ['127.0.0.1']
 	
 	# hancock
-	keyFile = '/Users/rik/hacks/fitAlchem_secretKey.txt' # MONK
-	dbkf = '/Users/rik/hacks/psql4djangoPW.txt'  # MONK
-
-	# monk
-	# keyFile = '/home/rik/hacks/fitAlchem_secretKey.txt' # MONK
-	# dbkf = '/home/rik/hacks/psql4djangoPW.txt'  # MONK
+	keyFile = 'KEYFILE' # MONK
+	dbkf = 'PSQLPWFILE'  # MONK
 
 	# memcacheFile = '/Data/virtualenv/django/memcached.sock'
 
@@ -47,16 +43,16 @@ elif HostName.find('webfaction') != -1:
 
 	print('##',ALLOWED_HOSTS)
 
-	keyFile = '/home/rik/hacks/fitAlchem_secretKey.txt'
-	dbkf = '/home/rik/hacks/psql4djangoPW.txt'
+	keyFile = 'KEYFILE'
+	dbkf = 'PSQLPWFILE'
 	# memcacheFile = '$HOME/memcached.sock'
 
 	# https://docs.webfaction.com/software/django/config.html#serving-django-static-media
 	STATIC_URL = '/static/'
-	STATIC_ROOT = '/home/rik/webapps/djstatic/'
+	STATIC_ROOT = '.../djstatic/'
 	
-	FitAlchemDir = "/home/rik/webapps/djstatic/fitAlchem/"
-	SiteURL = 'fitAlchem.electronicArtifacts.com'
+	FitAlchemDir = "HOME-DIR"
+	SiteURL = 'SITE-URL'
 
 else:
 	import sys
@@ -134,10 +130,7 @@ WSGI_APPLICATION = 'fitAlchem.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
-# 180202: FORCE use of hancock's credentials when hitting webfaction database
-# keyFile = '/Users/rik/hacks/fitAlchem_secretKey.txt'
-
-dbkf = '/Users/rik/hacks/psql4djangoPW.txt' # MONK
+dbkf = 'DBPWFILE' # MONK
 
 with open(dbkf) as f:
         DBPW = f.read().strip()
@@ -148,25 +141,10 @@ DATABASES = {
 # 		# local
 		'ENGINE': 'django.db.backends.postgresql_psycopg2',
 		    'NAME': 'fitalchem',
-		        'USER': 'rik',
+		        'USER': 'USER',
 		        'PASSWORD': DBPW,
 		        'HOST': 'localhost',
 		        'PORT': '',
-
-		# webfaction local		
-# 		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-# 		'NAME': 'fitalchem', # Local: 'fitalchem', WebFaction: 'djdb4fa'
-# 		'USER': 'rik',
-# 		'PASSWORD': DBPW,
-# 		'HOST':  '127.0.0.1',
-# 		'PORT': '5432',
-
-	   	# webfaction database hit remotely
-# 		'ENGINE': 'django.contrib.gis.db.backends.postgis',
-# 		'NAME': 'djdb4fa',
-# 		'USER': 'rik',
-# 		'PASSWORD': DBPW, 
-# 		'HOST': '207.38.86.27', # web556.webfaction.com
 		
     }
 }
