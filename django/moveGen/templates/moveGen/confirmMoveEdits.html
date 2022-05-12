@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Movement edits confirmed {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Movement edits confirmed</h1>
+
+{{confList|safe}}
+
+
+<p align=center><a href= "/moveGen/bldMesoSys/">Back to MesoSystems</a></p>
+{% endblock %}

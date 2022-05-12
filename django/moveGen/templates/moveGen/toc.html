@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} TOC  {% endblock %}
+
+{% block content %}
+
+<h1 align=center>FitnessAlchemy <br> MesoCycles and Schedules TOC</h1>
+
+<HR>
+
+<table align=center border=2>
+
+<TR>
+  	<TH class="td-center">SchedName</TH>
+  	<TH class="td-center">SchedIdx</TH>
+  	<TH class="td-center">SchedCreateDate</TH>
+  	<TH class="td-center">DELETE Schedule!</TH>
+  	<TH class="td-center">MesoName</TH>
+  	<TH class="td-center">MesoAudience</TH>
+  	<TH class="td-center">Schedule Details</TH>
+</TR>
+
+
+{% for mschedRow in mschedList %}
+<TR>
+
+	<TD class="td-center">{{mschedRow.schedName}}</TD>
+	<TD class="td-center">{{mschedRow.schedPK}}</TD>
+	<TD class="td-center">{{mschedRow.schedCDate}}</TD>
+	<TD class="td-center">
+		{% if mschedRow.schedPK != '' %}
+			<a style="color:red" href="/moveGen/deleteSched/{{mschedRow.schedPK}}/">X</a>
+		{% endif %}		  
+	</TD>
+	<TD class="td-center">
+		<a href="/moveGen/pprintMeso/{{mschedRow.meso2PK}}">{{mschedRow.mesoName}}</a>
+	</TD>		
+	<TD class="td-center">{{mschedRow.mesoAudience}}</TD>
+	<TD class="c0">
+		{% if mschedRow.schedPK != '' %}
+			<p><a href="/moveGen/primaryNMSched/{{mschedRow.schedPK}}">Primary</a> </p>
+			{% if mschedRow.mesoAudience == 'cohort' %}
+				<p><a href="/moveGen/unifiedSched/{{mschedRow.schedPK}}_{{mschedRow.sched2PK}}">Unified</a></p>
+				<p><a href="/moveGen/allWOS/{{mschedRow.schedPK}}_{{mschedRow.sched2PK}}">Workouts</p>
+			{% else %}
+				<p><a href="/moveGen/allWOS/{{mschedRow.schedPK}}">Workouts</p>
+			{% endif %}
+		{% endif %}		  
+	</TD>
+
+</TR>
+{% endfor %}
+</table>
+
+{% endblock %}
+

@@ -1,0 +1,5 @@
+<form action="" method="post">{% csrf_token %}
+    <p>Are you sure you want to delete Primary Schedule"{{ object }}"?</p>
+    <p>(Will also delete related Secondary schedule)
+    <input type="submit" value="Confirm" />
+</form>

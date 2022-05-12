@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} ShowWOS {% endblock %}
+
+{% block content %}
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.js"></script>
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+
+
+<h1 align=center>WorkOut Schedule</h1>
+<h2	 align=center>Meso:{{meso}} Week:{{week|add:"1"}} Day:{{day|add:"1"}}</h2>
+
+<hr>
+
+<svg id="wosketch" width="960" height="1000"></svg>
+<script>
+
+	// Add equals() to Array
+	// https://stackoverflow.com/a/14853974/1079688
+	//
+	// Warn if overriding existing method
+	if(Array.prototype.equals)
+	    console.warn("Overriding existing Array.prototype.equals.");
+	// attach the .equals method to Array's prototype to call it on any array
+	Array.prototype.equals = function (array) {
+	    // if the other array is a falsy value, return
+	    if (!array)
+	        return false;
+	
+	    // compare lengths - can save a lot of time 
+	    if (this.length != array.length)
+	        return false;
+	
+	    for (var i = 0, l=this.length; i < l; i++) {
+	        // Check if we have nested arrays
+	        if (this[i] instanceof Array && array[i] instanceof Array) {
+	            // recurse into the nested arrays
+	            if (!this[i].equals(array[i]))
+	                return false;       
+	        }           
+	        else if (this[i] != array[i]) { 
+	            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+	            return false;   
+	        }           
+	    }       
+	    return true;
+	}
+
+	function numRange (start, end) {
+	  return new Array(end - start).fill().map((d, i) => i + start);
+	}	
+
+	function randTxt(len) {
+	  var text = "";
+	  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	
+	  for (var i = 0; i < len; i++)
+	    text += possible.charAt(Math.floor(Math.random() * possible.length));
+	
+	  return text;
+	}
+
+	function make_editable(d, field) {
+		// http://bl.ocks.org/GerHobbelt/2653660
+	    console.log("make_editable", arguments);
+	
+	    this
+	      .on("mouseover", function() {
+	        d3.select(this).style("fill", "red");
+	      })
+	      .on("mouseout", function() {
+	        d3.select(this).style("fill", null);
+	      })
+	      .on("click", function(d) {
+	        var p = this.parentNode;
+	        console.log(this, arguments);
+	
+	        // inject a HTML form to edit the content here...
+	
+	        // bug in the getBBox logic here, but don't know what I've done wrong here;
+	        // anyhow, the coordinates are completely off & wrong. :-((
+	        var xy = this.getBBox();
+	        var p_xy = p.getBBox();
+	
+	        xy.x -= p_xy.x;
+	        xy.y -= p_xy.y;
+	
+	        var el = d3.select(this);
+	        var p_el = d3.select(p);
+	
+	        var frm = p_el.append("foreignObject");
+	
+	        var inp = frm
+	            .attr("x", xy.x)
+	            .attr("y", xy.y)
+	            .attr("width", 300)
+	            .attr("height", 25)
+	            .append("xhtml:form")
+	                    .append("input")
+	                        .attr("value", function() {
+	                            // nasty spot to place this call, but here we are sure that the <input> tag is available
+	                            // and is handily pointed at by 'this':
+	                            this.focus();
+	
+	                            return d[field];
+	                        })
+	                        .attr("style", "width: 294px;")
+	                        // make the form go away when you jump out (form looses focus) or hit ENTER:
+	                        .on("blur", function() {
+	                            console.log("blur", this, arguments);
+	
+	                            var txt = inp.node().value;
+	
+	                            d[field] = txt;
+	                            el
+	                                .text(function(d) { return d[field]; });
+	
+	                            // Note to self: frm.remove() will remove the entire <g> group! Remember the D3 selection logic!
+	                            p_el.select("foreignObject").remove();
+	                        })
+	                        .on("keypress", function() {
+	                            console.log("keypress", this, arguments);
+	
+	                            // IE fix
+	                            if (!d3.event)
+	                                d3.event = window.event;
+	
+	                            var e = d3.event;
+	                            if (e.keyCode == 13)
+	                            {
+	                                if (typeof(e.cancelBubble) !== 'undefined') // IE
+	                                  e.cancelBubble = true;
+	                                if (e.stopPropagation)
+	                                  e.stopPropagation();
+	                                e.preventDefault();
+	
+	                                var txt = inp.node().value;
+	
+	                                d[field] = txt;
+	                                el
+	                                    .text(function(d) { return d[field]; });
+	
+	                                // odd. Should work in Safari, but the debugger crashes on this instead.
+	                                // Anyway, it SHOULD be here and it doesn't hurt otherwise.
+	                                p_el.select("foreignObject").remove();
+	                            }
+	                        });
+	      });
+	}	
+	
+	//////////////////////////////////
+	
+	var MAX_ZOOM_IN = 2.0;
+	var MAX_ZOOM_OUT = 0.2;
+	var zoomStep = 0.2;
+	var actualZoomLevel = 1.0;
+	var MOVE_STEP = 100;
+	var zoomable_layer, zoom;
+	
+	var width = 960;
+	var height = 1000;
+	var margin = {top: 10, right: 10, bottom: 30, left: 10}	
+	
+	//SVG Coordinate space has x=0 and y=0 coordinates fall on the top left.
+	// Y coordinate growing from top to bottom. 
+		
+	var menuLeft = 20;
+	var menuWOTop = 0;
+	var menuWidth = Math.round(width * 0.3);
+	var menuWOHgt = Math.round(height * 0.03);
+	var menuOtherTop = Math.round(height * 0.2);
+	var menuOtherHgt = Math.round(height * 0.02);
+	var rectRndX = Math.round(menuWidth * 0.2);
+	var woRectRndY = Math.round(menuWOHgt * 0.5);
+	var otherRectRndY = Math.round(menuOtherHgt * 0.4);
+	
+	var schedTop = 0;
+	var schedLeft = Math.round(width * 0.4);
+	var schedWid = Math.round(width * 0.5);
+	var schedHgt = height;
+	// ASSUME divide schedule into 5 min increments
+	var schedMoveHgt = Math.round(schedHgt / 12.);
+	var schedRndX = Math.round(schedMoveHgt * 0.5);
+	var schedRndY = Math.round(schedWid * 0.5);
+	var schedLMargin = 0;
+	var schedOpacity = 0.5;
+	
+	var MeasureColor = {"Assault Bike": [255,255,255],
+						"Split Squat": [255,0,0],
+						"TB Deadlift": [255,255,0],
+						"Pull-Up": [164,194,244],
+						"Push-Up": [182,215,168],
+						"Turkish Get-Up" : [180,167,214] }
+	
+	var woFontSize = 14;
+	var otherFontSize = 10;
+	var schedFontSize = 18;
+	var nrepFontSize = 48;
+
+	var sketch = d3.select("#wosketch")
+		.attr("width", width)
+		.attr("height", height);
+		
+	var schedGroup = sketch.append("g");
+	
+	var schedBox = schedGroup.append("rect")
+					     .attr("x", schedLeft)
+					     .attr("y", schedTop)
+					     .attr("height", schedHgt)
+					     .attr("width", schedWid)
+					     .style("stroke","black")
+					     .style("opacity",0.5)
+					     .style("fill","white")
+					     
+	var schedGrid = schedGroup.selectAll('g')
+								.data(numRange(1,11))
+						 		.enter()
+								 .append("line")
+								 .attr("x1", schedLeft)
+								 // NB: make grid lines at 5 min vs. 10 min move time
+							     .attr("y1", function(d,i) { return schedTop + d * schedMoveHgt / 2; })
+							     .attr("x2", schedLeft + schedWid)
+							     .attr("y2", function(d,i) { return schedTop + d * schedMoveHgt / 2; })
+							     .style("stroke","lightgrey")
+							     
+	var nsched=0
+		
+	var schedList = [];
+	
+	var meso = "{{meso}}"
+	var week = {{week}}
+	var day = {{day}} 
+	var woInfo = {{woExer|safe}}
+	var otherInfo = {{otherExer|safe}}
+
+	// test names
+// 	var woInfoOrig = woInfo
+// 	var otherInfoOrig = otherInfo
+// 	var woInfo = Array();
+// 	woInfoOrig.forEach(function(n) {
+// 			var newinfo = n;
+// 			newinfo.name = randTxt(10)
+// 			woInfo.push(newinfo);
+// 		});
+// 	var otherInfo = Array();
+// 	otherInfoOrig.forEach(function(n) {
+// 			var newinfo = n;
+// 			newinfo.name = randTxt(10)
+// 			otherInfo.push(newinfo);
+// 		});
+
+
+	woInfo.forEach(function(n,i) {
+			n.x = menuLeft;
+			n.y = menuWOTop + i * menuWOHgt;
+		});
+		
+	var menuContainer = sketch.append("g");
+
+	var wogroup = menuContainer.selectAll('g')
+					  .data(woInfo)
+					  .enter().append("g")
+					  .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+					  .call(d3.drag()
+					    .on("start", dragstarted)
+					    .on("drag", dragged)
+					    .on("end", dragended))
+					   .on('click', selectMove);
+	
+	wogroup.append("rect")
+		     .attr("x", function(d) { return d.x; })
+		     .attr("y", function(d) { return d.y; })
+		     .attr("height", menuWOHgt)
+		     .attr("width", menuWidth)
+			 .attr("rx",rectRndX)
+			 .attr("ry",woRectRndY)
+			 // 2do: non-redundant rgb?
+			 .style("fill", function(d) {
+								var rgb = MeasureColor[d.measure];
+								rgbStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+								return rgbStr})
+								
+			 .style("stroke", function(d) {
+								var rgb = MeasureColor[d.measure];
+								rgbStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+								var strokeColor;
+								if (rgb.equals([255,255,255])) {
+									strokeColor = 'black';
+								} else {
+									strokeColor = rgbStr;
+								}
+								return strokeColor})
+								
+			 .style("fill-opacity", function(d) {
+			 						var opacity;
+			 						if (d.parent==d.name) { opacity = 1.0 }
+										else { opacity = 0.6; };
+			 						return opacity;})
+	
+	var transStr = `translate( ${Math.round(menuWidth * 0.5)}, ${Math.round(menuWOHgt * 0.5)} )`
+	
+	wogroup.append("text")
+			 .text(function(d) { 
+			 	var lbl;
+			 	if (d.access == '') {
+			 		lbl = d.name; 
+			 	} else {
+			 		lbl = `${d.name} (${d.access})`;
+			 	}
+			 	return lbl; 
+			 } )
+			 .attr("class","moveName")
+		     .attr("x", function(d) { return d.x; })
+		     .attr("y", function(d) { return d.y; })
+		     .attr("transform", transStr)
+             .style('fill', 'black')
+             .style('font-size', woFontSize)
+             .style('text-anchor', 'middle') ;
+
+
+	otherInfo.forEach(function(n,i) {
+			n.x = menuLeft;
+			n.y = menuOtherTop + i * menuOtherHgt;
+		});
+		
+	var otherGroup = menuContainer.selectAll('g')
+					  .data(otherInfo)
+					  .enter().append("g")
+					  .attr("transform", `translate( ${margin.left}, ${margin.top} )`)
+					  .call(d3.drag()
+					    .on("start", dragstarted)
+					    .on("drag", dragged)
+					    .on("end", dragended))
+					    .on('click', selectMove);
+					
+	otherGroup.append("rect")
+		     .attr("x", function(d) { return d.x; })
+		     .attr("y", function(d) { return d.y; })
+		     .attr("height", menuOtherHgt)
+		     .attr("width", menuWidth)
+			 .attr("rx",rectRndX)
+			 .attr("ry",woRectRndY)
+			 // 2do: non-redundant rgb?
+			 .style("fill", function(d) {
+								var rgb = MeasureColor[d.measure];
+								rgbStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+								return rgbStr})
+								
+			 .style("stroke", function(d) {
+								var rgb = MeasureColor[d.measure];
+								rgbStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+								var strokeColor;
+								if (rgb.equals([255,255,255])) {
+									strokeColor = 'black';
+								} else {
+									strokeColor = rgbStr;
+								}
+								return strokeColor})
+								
+			 .style("fill-opacity", function(d) {
+			 						var opacity;
+			 						if (d.parent==d.name) { opacity = 1.0 }
+										else { opacity = 0.6; };
+			 						return opacity;})
+
+	var otransStr = `translate( ${Math.round(menuWidth * 0.5)}, ${Math.round(menuOtherHgt * 0.5)} )`
+	otherGroup.append("text")
+			 .text(function(d) { return `${d.name} (${d.access})` ; } )
+		     .attr("x", function(d) { return d.x; })
+		     .attr("y", function(d) { return d.y; })
+		     .attr("transform", otransStr)		     
+             .style('fill', 'black')
+             .style('font-size', otherFontSize)
+             .style('text-anchor', 'middle') ;
+
+
+	function dragstarted(d) {
+	
+	  if (this.hasAttribute("dropped")) { 
+	  		// console.log('dragStart-prevDrop '+d.name)
+	  		return; }
+		
+	  d3.select(this).raise().classed("active", true);
+	}
+		
+	function dragged(d) {
+	  if (this.hasAttribute("dropped")) { 
+	  		// console.log('drag-prevDrop '+d.name)
+	  		return; }
+
+	  d3.select(this).select("text")
+	    .attr("x", d.x = d3.event.x)
+	    .attr("y", d.y = d3.event.y);
+	  d3.select(this).select("rect")
+	    .attr("x", d.x = d3.event.x)
+	    .attr("y", d.y = d3.event.y);
+
+	}
+
+	function dragended(d) {
+		// register dragged move into hourSched
+
+	  if (this.hasAttribute("dropped")) { 
+	  		// console.log('dragEnd-prevDrop '+d.name)
+	  		return; }
+
+		
+		var top = schedTop + (nsched++) * schedMoveHgt;
+		var transX = (schedLeft + schedLMargin) - d.x ;
+		var transY = top - d.y;
+		var tstr = `translate( ${transX}, ${transY} )`;
+		
+		var rect = this.children[0];
+		var text = this.children[1];
+		
+		d3.select(rect).attr("height", schedMoveHgt)
+					     .attr("width", schedWid)
+						 .attr("rx",schedRndX)
+						 .attr("ry",schedRndY)
+						 .style("fill-opacity",schedOpacity);
+
+						 
+		d3.select(this).attr("transform", tstr);
+
+		var txttstr = `translate( ${Math.round(schedWid * 0.5)}, ${Math.round(schedMoveHgt * 0.5)} )`;
+					   
+ 		d3.select(text).attr("transform", txttstr)
+ 					   .style('font-size', schedFontSize);
+ 							
+		d.nrep = 1
+		schedList.push(d);
+
+		var nreptstr = `translate( ${0}, ${Math.round(schedMoveHgt * 0.5)} )`;
+		
+	  	var nreps = d3.select(this).append('g')
+	  						.attr("class","nrepTxt")
+	  						.append('text')
+						     .attr("x", d.x)
+						     .attr("y", d.y)
+	  						.text(d.nrep+'x')
+	  						.attr("transform", nreptstr)
+	  						.style('font-size', nrepFontSize)
+	  						.style('text-anchor', 'left') ;
+
+		d3.select(this).attr('dropped', true);
+		d3.select(this).classed("active", false);
+	}
+
+	function selectMove(d) {
+		// protect click from drag
+	  	if (d3.event.defaultPrevented) return; 
+	  	
+	  	var nrepo = this.children[2];
+	  	var nrepoTxt = nrepo.children[0];
+	  	
+	  	d.nrep += 1;
+	  	
+	  	d3.select(nrepoTxt).text(d.nrep + 'x');
+		
+	  	// console.log('clicked');
+	}
+
+	function collectSched() {
+		var input = document.createElement("input");
+		input.type = "hidden";
+	    input.name = "schedList";
+	    input.value = JSON.stringify(schedList);
+	    $('#wosForm').append(input);  
+
+		input = document.createElement("input");
+		input.type = "hidden";
+	    input.name = "meso";
+	    input.value = meso;
+	    $('#wosForm').append(input);  
+
+		input = document.createElement("input");
+		input.type = "hidden";
+	    input.name = "week";
+	    input.value = week;
+	    $('#wosForm').append(input);  
+
+		input = document.createElement("input");
+		input.type = "hidden";
+	    input.name = "day";
+	    input.value = day;
+	    $('#wosForm').append(input);  
+	                             	
+	}
+	
+</script>
+
+{% endblock %}

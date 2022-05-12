@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Meso Systems  {% endblock %}
+
+{% block content %}
+
+<h1 align=center>FitnessAlchemy <br>Meso Systems</h1>
+
+<HR>
+
+<p align=center>Systems of inter-related Movements used in MesoCycle scheduling
+</p>
+
+<h3 align=center>Current MesoSystem:</h3>
+<h3 id="currMSHTML" align=center></h3>
+
+<table align=center border=2>
+
+<TR>
+  	<TH class="td-center">SELECT</TH>
+  	<TH class="td-center">System</TH>
+  	<TH class="td-center">Author</TH>
+  	<TH class="td-center">Date</TH>
+  	<TH class="td-center">Edit</TH>
+  	<TH class="td-center">Commit moves</TH>
+  	<TH class="td-center">Clone</TH>
+  	<TH class="td-center">DELETE System!</TH>
+</TR>
+
+          
+<script>
+	var currMS, currMSIdx;
+	
+	function handleClick(myRadio) {
+    	// alert('Old value: ' + currMS);
+    	// alert('New value: ' + myRadio.value);
+    	currMS = myRadio.value;
+    document.getElementById("currMSHTML").innerHTML = currMS;
+
+	currMSIdx = currMS.split('_')[0];
+	if (document.getElementById("newIndiv")) {
+	     document.getElementById("newIndiv").href = `/moveGen/createIndivMeso/${currMSIdx}/`
+	     document.getElementById("newCohort").href =`/moveGen/createCohortMeso/${currMSIdx}/`
+    }
+	
+    }
+</script>
+
+<form name="msForm">
+
+{% for sys in sysList %}
+    {% if sys.name == 'default' %} 
+        <script>
+        	currMS = "{{sys.idx}}_{{sys.name}}";
+        	document.getElementById("currMSHTML").innerHTML = currMS;
+        </script>
+    {% endif %}          		
+
+<TR>
+	<TD class="td-center">
+		{% if sys.movesCommited  %}
+		<input type = "radio"
+               name = "msRadio"
+               id = "mesoSys:{{sys.idx}}"
+               value = "{{sys.idx}}_{{sys.name}}"
+               onclick = "handleClick(this);"
+               {% if sys.name == 'default' %} 
+               		checked="checked" 
+               {% endif %}          		
+         />
+         
+         <!-- <label for = "mesoSys:{{sys.idx}}">{{sys.name}}</label> -->	
+         		
+		{% else %}
+
+		{% endif %}
+	</TD>
+	<TD class="td-center">{{sys.name}}</TD>
+	<TD class="td-center">{{sys.author}}</TD>
+	<TD class="td-center">{{sys.cdate}}</TD>
+	<TD class="td-center">
+		{% if sys.movesCommited  %}
+			
+		{% else %}
+			<a href="/moveGen/editMoves/{{sys.idx}}/">Edit</a>
+		{% endif %}
+	</TD>
+	<TD class="td-center">
+		{% if sys.movesCommited  %}
+			Committed
+			
+		<!-- NB: Don't want to commit something that is just a clone of an existing mesoSys! -->
+		{% elif '(clone)' in sys.name %}
+
+		{% else %}
+			<a href="/moveGen/applyMoveEdits/{{sys.idx}}/">Commit</a>		
+		{% endif %}
+	</TD>
+	<TD class="td-center">
+		{% if sys.movesCommited  %}
+			<a href="/moveGen/cloneMesoSys/{{sys.idx}}/">Clone</a>
+		{% endif %}
+	</TD>
+	<TD class="td-center">
+		{% if sys.movesCommited   %}
+			
+		{% else %}
+				<a href="/moveGen/deleteMesoSys/{{sys.idx}}/">DELETE!</a>
+		{% endif %}
+	</TD>
+
+</TR>
+{% endfor %}
+
+</form>
+</table>
+
+<p align=center>
+<a href='/moveGen/editMoves/NEW/'>Initialize new (empty) Meso System</a>
+</p>
+
+<p><hr><p>
+<h3>Create new MesoCycle using selected Meso System</h3>
+
+<ul>
+	<li><a id="newIndiv">New INDIV meso</a></li>
+	<li><a id="newCohort">New COHORT meso</a></l1>
+</ul>
+
+<script>
+	currMSIdx = currMS.split('_')[0];
+	document.getElementById("newIndiv").href = `/moveGen/createIndivMeso/${currMSIdx}/`
+	document.getElementById("newCohort").href =`/moveGen/createCohortMeso/${currMSIdx}/`
+</script>
+
+{% endblock %}
+
+	

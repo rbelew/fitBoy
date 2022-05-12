@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} WOS Evaluated {% endblock %}
+
+{% block content %}
+
+<h1 align=center>WOS Evaluated!</h1>
+<p align=center>WOS: {{wosIdx}}</p>
+<p>Evaluation: {{eval}}</p>
+<p>Comments: {{comments}}</p>
+
+<p align=center><a href= "/moveGen/showWOS/{{wosIdx}}">Return to this workout schedule</a></p>
+
+<p align=center><a href= "/moveGen/">Back to TOC</a></p>
+{% endblock %}

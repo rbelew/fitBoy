@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Create INDIV MesoCycle {% endblock %}
+
+{% block content %}
+
+<!-- <script src="htpp://d3js.org/d3.v4.min.js"></script>  -->
+<!-- d3 v 4.13.0, 16 Feb 18 -->
+<script src="{% static 'js/d3.min.js' %}"></script>
+
+<script type="text/javascript" src="{% static 'js/bootstrap-rating.min.js' %}"></script>
+ 
+<link href="{% static 'css/bootstrap-rating.css' %}" rel="stylesheet">
+ 
+ <!-- 
+<script type="text/javascript" src="{% static 'js/jquery.min.js' %}"></script>
+
+<link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+
+
+ -->
+ 
+ 
+<!-- NB: import drawMeso early, for Quality targets -->
+
+<script src="{% static 'js/drawMeso.js' %}"></script>
+
+
+<!-- Update version 180405: Elaborating Meso editting stages
+
+	Dropped all Sortable drag/drop of Measures/Qualities
+ 
+<script src="htpp://rubaxa.github.io/Sortable/Sortable.js"></script> 
+<script src="{% static 'js/Sortable.min.js' %}"></script> 
+ 
+ -->
+ 
+<style>
+
+ 	svg {
+	  box-sizing: border-box;
+	  border: 1px solid rgb(212, 212, 212);
+	}
+	
+	line {
+	  stroke: rgb(212, 212, 212);
+	  /* stroke-width: 1px; */
+	shape-rendering: crispEdges;
+
+	.movemt rect {
+	width: 300;
+	height: 50;
+	}
+ 
+	.largeRed { font-size: 2em; color: red} 
+	.largeGreen { font-size: 2em; color: green} 
+	
+ 	.qrating
+	.includeQual
+	.schedQual
+
+ 
+ </style>
+ 
+ <script>
+// need to establish ratings defaults before table
+// If what you need is to change the default start and stop values for all the rating controls, 
+// just override the plugin defaults:
+
+$.fn.rating.defaults.start = 1;
+$.fn.rating.defaults.stop = 4;
+
+// If you want to change the default glyphicons for all the rating controls, you only need to 
+// override the plugin default values:
+
+$.fn.rating.defaults.filled = 'glyphicon glyphicon-ok-circle largeGreen';
+$.fn.rating.defaults.empty = 'glyphicon glyphicon-remove-circle largeRed';
+ 
+ </script>
+ 
+<h1 align=center>Create INDIV MesoCycle </h1>
+
+<center>
+<p>Generated from {{mesoSysName}} [{{mesoSysIdx}}] Meso System
+<p>Specify Meso Cycle details, then hit <b>Save</b>!</p>
+</center>
+
+<div id="d3Form"></div>
+
+<p>
+    <form id="mesoForm" method="post" onsubmit="collectMeso()">
+    	{% csrf_token %}
+
+		<p>
+ 		<label for="mesoName">Meso name</label><em>(Required)</em>
+ 	    <input class="d3input" type=text name="mesoName" id="mesoName"
+ 	    		placeholder="A name for this mesoCycle" size="20" required />
+ 	    </p>
+
+		<p>
+ 		<label for="mesoDesc">Description</label>
+ 	    <input class="d3input" type=text name="mesoDesc" id="mesoDesc" 
+ 	    		placeholder="What is this meso about?" size="50" />
+ 		</p>
+ 		
+ 		<p>
+ 	    <input class="d3input" type="hidden" name="mesoSysIdx" id="mesoSysIdx"  value="{{mesoSysIdx}}"  />
+ 		</p>
+ 		
+  	    <input class="d3input" type="hidden" name="mesoAudience" id="mesoAudienceIndiv" value="indiv" />
+
+		<p align=left>
+ 		<label for="totSession">Total sesssions (=10 for now)</label>
+ 	    <input class="d3input" type=number name="totSession" id="totSession"  disabled/>
+ 		</p>
+
+
+	
+   	</form>
+
+	 
+		<h3>Qualities</h3>
+		
+		<p>First click <b>include</b> to identify a quality to be included in this Meso.  Optionally 
+			you can also select it to be included in the schedule (perhaps more than once).</p>
+			
+		<table class="table" border=2>
+			<TR>
+				<TH class="td-center">Quality</TH>
+			  	<TH class="td-center">Include</TH>
+			  	<TH class="td-center">Schedule (s)</TH>
+			 </TR>
+			{% for measure in measureList %}
+			<TR>
+				<TD class="td-center">{{measure.task}}</TD>
+
+				<TD class="td-center"><input id="includeQual_{{measure.idx}}_{{ measure.name }}_{{ measure.task }}" 
+										type='checkbox' class='includeQual' ></TD>
+				<TD class="td-center">
+					<input id="sched_{{measure.idx}}_{{ measure.name }}_{{ measure.task }}" 
+						type="hidden" class="rating" 
+						disabled = true
+						data-filled="glyphicon glyphicon-ok-circle largeGreen" 
+						data-empty="glyphicon glyphicon-remove-circle largeRed" >					
+
+						
+				</TD>
+				
+			</TR>
+			{% endfor %}
+		</table>
+
+
+     <p align=left ><button name="Reset qualities" onclick='resetQualities()'>Re-initialize quality selection</button></p>
+ 
+	<h3>Accessories</h3>
+	
+	<p>Accessory movements typically associated with the qualities above are included by default.  
+		<b>De-select</b> any you do <b>not</b> want to be used in this Meso.
+	</p>
+	
+	<div id='accessListDiv'>
+		<ul id='accessList'>
+		</ul>
+	</div>
+
+	<h3>Move sequences</h3>
+        
+     <p>Move the scheduled qualities to one of the two slots associated with each workout.
+     	You can use the <b>Repeat</b> button to use the initial portion of the schedule you've specified
+     	as a schema/template for subsequent sessions.  Any slots left unspecified become <b>OPEN</b>
+     	for random assignment in a schedule from any of the included qualities.
+     	</p>
+     	
+     <p>When you're all done specifying the Meso, make sure to <b>SAVE</b> it!</p>
+     	
+     <p align=left ><button name="RepeatToFill" onclick='repeatToFillIndiv()'>Repeat these movements as <em>schema</em> throughout schedule</button></p>
+     
+     <p align=right><button form='mesoForm' name="SaveMoveSeq" onsubmit="collectMeso()" formaction="/moveGen/saveMeso/"><b>Save new meso!</b></button></p>
+ 
+	<div id='moveSeqSVG'>
+	</div>
+
+
+<script>
+
+// global constants
+
+
+schedType = 'indiv';
+var nsession=10;
+var nweek=1;
+var moveWid=100;
+var moveHgt=60;
+
+var Xresolution= moveWid;
+var Yresolution= moveHgt;
+
+var includeQual = [];
+var schedQual = [];
+
+// NB: ENTIRE collection accryTbl of measurements and accessories is downloaded to client
+// accryTbl: measure.idx -> ['accryIdx_accessName', ...]
+var accryTbl = {{accryTbl|safe}};
+
+var includeAccry = [];
+
+var width = nsession * moveWid,
+	height = 2* nweek * moveHgt;
+	
+// console.log("top");
+
+var svg = d3.select('#moveSeqSVG').append('svg')
+    .attr('width', width)
+    .attr('height', height);
+    
+	drawSchedGrid('indiv');
+
+ 
+var qinc = d3.selectAll('.includeQual');
+qinc.each(function(d,i) {
+	this.onclick = handleIncludeQualClick;
+	console.log('qinc: '+ i + ' ' + this.id);
+});
+
+var qratings = d3.selectAll('.rating');
+qratings.each(function(d,i) {
+	this.onchange = handleQualSchedChange;
+	console.log('qratings: '+ i + ' ' + this.id);
+});
+
+
+function handleQualSchedChange(e) {
+	
+	var inDOM = e.currentTarget;
+  	console.log('handleQualSchedChange: '  + $(this).val());
+  	
+  	// add new quality (qualities) to schedQual (nee sortSelect) for drawMeso.js
+  	var nrep = parseInt(inDOM.value);
+  	// NB: nrep is 1+ number of reps 
+  	for (var i=1; i < nrep; i++) {
+	  	schedQual.push(inDOM.id);
+	  }
+  	redraw();
+
+}
+
+function handleIncludeQualClick(e) {
+	// toggle whether corresponding qual sched rating is disabled
+	// Add/remove all accry associated with this quality
+
+	// https://github.com/d3/d3-selection
+	// 
+	// By convention, selection methods that return the current selection use
+	// four spaces of indent, while methods that return a new selection use
+	// only two. This helps reveal changes of context by making them stick
+	// out of the chain:
+
+	var inDOM = e.currentTarget;
+	var inLbl = inDOM.id;
+    if (inDOM.checked) {
+		includeQual.push(inLbl);
+	} else {			  
+		var idx = includeQual.indexOf(inLbl);
+		includeQual.splice(idx,1);
+	}			  
+					  
+	var schedID = inLbl.replace('includeQual','sched')
+
+	console.log('handleIncludeQualClick:' + inLbl + ' ' + schedID);
+	
+	// 2do: Why doesn't this d3 select on ID work?!
+	// var schedID1 = '#' + schedID
+	// var schedDOM1 = d3.select(schedID1);
+	
+	var schedDOM = document.getElementById(schedID);
+	schedDOM.disabled = false;
+
+	// Add all accry associated with this quality
+	var accessListDOM = document.getElementById('accessList');
+	
+	var qualIdx = inLbl.split('_')[1];
+	var accryList = accryTbl[qualIdx];
+	
+	for (var i=0; i<accryList.length ; i++) {
+		var accryLbl = accryList[i];
+		
+		if (inDOM.checked) {
+			includeAccry.push(accryLbl);
+
+			var accryIdx = accryLbl.split('_')[0];
+			var accryName = accryLbl.split('_')[1];
+
+			var newAInLI = document.createElement('li')
+			var input = document.createElement("input");
+			input.id = accryLbl;
+			input.type = 'checkbox';
+			input.checked = true;
+			newAInLI.appendChild(input);
+
+			var inLbl = document.createElement("label");
+			inLbl.for = accryLbl
+			inLbl.textContent = accryName;
+			newAInLI.appendChild(inLbl);
+
+			accessListDOM.appendChild(newAInLI);
+
+		} else {			  
+		    var idx = includeAccry.indexOf(accryLbl);
+			includeAccry.splice(idx,1);
+
+			var accryDOM = document.getElementById(accryLbl);
+			var liDOM = accryDOM.parentNode;
+			accessListDOM.removeChild(liDOM);
+		}			  
+		
+	}
+	e.stopPropagation();		
+}
+
+function resetQualities() {
+	// reset all include checkbox, schedule ratings, excluded accessories
+	// remove all tasks from schedQual
+	
+	d3.selectAll('.includeQual')
+		.each(function () {
+			this.checked = false;
+		})
+
+	d3.selectAll('.rating')
+		.each(function () {
+			// this.rating();  // doesn't work?!
+			this.value = '';
+			this.disabled = true;
+		})
+
+	var accessListDOM = document.getElementById('accessList');	
+	while (accessListDOM.firstChild) {
+    	accessListDOM.removeChild(accessListDOM.firstChild);
+	}
+
+	schedQual = [];
+	redraw();
+}
+</script> 
+
+
+{% endblock %}
+

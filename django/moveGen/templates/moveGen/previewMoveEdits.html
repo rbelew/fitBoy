@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Preview Movement edits {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Preview {{mesoSys.name}} [ {{mesoSys.idx}} ] Movement changes </h1>
+
+{{confList|safe}}
+
+<p align=center><a href="/moveGen/applyMoveEdits/{{mesoSys.idx}}/"><b>Commit</b></a> Movements in this MesoSystem</p>
+
+<p><hr><p>
+
+<p align=center>Continue to <a href= "/moveGen/editMoves/{{mesoSys.idx}}/"><b>Edit</b></a> {{mesoSys.name}} moves</p>
+
+
+<p align=center><a href="/moveGen/bldMesoSys/">Return</a> to MesoSystems</a></p>
+
+	
+
+{% endblock %}

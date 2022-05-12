@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Client Assessment Idx={{clientIdx}}  {% endblock %}
+
+{% block content %}
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+
+	<h1>Client #{{clientIdx}}</h1>
+		{% with nextIdx=clientIdx|add:"1" %}
+		
+		 <!-- /moveGen/assess/{{clientIdx|add:"1"}} -->
+		<a href="{% url 'clientAssess' clientIdx=nextIdx %} " > Next client</a>
+		{% endwith %}
+	
+		<div class="radarChart"></div>
+
+		<script src="{% static 'js/bremer-radarChartD3.js' %}"></script>	
+		<script>
+      
+      /* Radar chart design created by Nadieh Bremer - VisualCinnamon.com */
+      
+			////////////////////////////////////////////////////////////// 
+			//////////////////////// Set-Up ////////////////////////////// 
+			////////////////////////////////////////////////////////////// 
+
+			var margin = {top: 100, right: 100, bottom: 100, left: 100},
+				width = Math.min(700, window.innerWidth - 10) - margin.left - margin.right,
+				height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+					
+			////////////////////////////////////////////////////////////// 
+			////////////////////////// Data ////////////////////////////// 
+			////////////////////////////////////////////////////////////// 
+
+			var data = [[{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.4032258064516129}], [{"axis": "Pullup", "value": 0.71875}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.3225806451612903}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.39473684210526316}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.08565656565656565}, {"axis": "Turkish Get Up", "value": 0.3225806451612903}], [{"axis": "Pullup", "value": 1.0}, {"axis": "Pushup", "value": 0.21052631578947367}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.13333333333333333}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.46875}, {"axis": "Pushup", "value": 0.6578947368421053}, {"axis": "Split Squat", "value": 1.0}, {"axis": "Trap Bar Deadlift", "value": 0.2868686868686869}, {"axis": "Turkish Get Up", "value": 1.0}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.2631578947368421}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.1414141414141414}, {"axis": "Turkish Get Up", "value": 0.4032258064516129}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.4473684210526316}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.2868686868686869}, {"axis": "Turkish Get Up", "value": 0.8548387096774194}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.21414141414141413}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.3684210526315789}, {"axis": "Split Squat", "value": 0.4088050314465409}, {"axis": "Trap Bar Deadlift", "value": 0.8484848484848485}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.631578947368421}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.15757575757575756}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.6875}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.3157894736842105}, {"axis": "Split Squat", "value": 0.22641509433962265}, {"axis": "Trap Bar Deadlift", "value": 0.1713131313131313}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.5}, {"axis": "Pushup", "value": 0.39473684210526316}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.11717171717171718}, {"axis": "Turkish Get Up", "value": 0.41935483870967744}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.6289308176100629}, {"axis": "Trap Bar Deadlift", "value": 1.0}, {"axis": "Turkish Get Up", "value": 0.8548387096774194}], [{"axis": "Pullup", "value": 0.40625}, {"axis": "Pushup", "value": 0.6578947368421053}, {"axis": "Split Squat", "value": 0.8301886792452831}, {"axis": "Trap Bar Deadlift", "value": 0.5252525252525253}, {"axis": "Turkish Get Up", "value": 0.8548387096774194}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.42105263157894735}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.23030303030303031}, {"axis": "Turkish Get Up", "value": 0.7258064516129032}], [{"axis": "Pullup", "value": 0.25}, {"axis": "Pushup", "value": 0.9210526315789473}, {"axis": "Split Squat", "value": 0.660377358490566}, {"axis": "Trap Bar Deadlift", "value": 0.21414141414141413}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.2631578947368421}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.1696969696969697}, {"axis": "Turkish Get Up", "value": 0.5645161290322581}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.33962264150943394}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.2631578947368421}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.07111111111111111}, {"axis": "Turkish Get Up", "value": 0.16129032258064516}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.18421052631578946}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.13333333333333333}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.40625}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.22641509433962265}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.41509433962264153}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.16129032258064516}], [{"axis": "Pullup", "value": 0.75}, {"axis": "Pushup", "value": 1.0}, {"axis": "Split Squat", "value": 0.8301886792452831}, {"axis": "Trap Bar Deadlift", "value": 0.24646464646464647}, {"axis": "Turkish Get Up", "value": 0.8548387096774194}], [{"axis": "Pullup", "value": 0.375}, {"axis": "Pushup", "value": 0.0}, {"axis": "Split Squat", "value": 0.49056603773584906}, {"axis": "Trap Bar Deadlift", "value": 0.0}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.3125}, {"axis": "Pushup", "value": 0.3684210526315789}, {"axis": "Split Squat", "value": 0.2358490566037736}, {"axis": "Trap Bar Deadlift", "value": 0.2505050505050505}, {"axis": "Turkish Get Up", "value": 0.16129032258064516}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.42105263157894735}, {"axis": "Split Squat", "value": 0.0}, {"axis": "Trap Bar Deadlift", "value": 0.26262626262626265}, {"axis": "Turkish Get Up", "value": 0.7096774193548387}], [{"axis": "Pullup", "value": 0.0}, {"axis": "Pushup", "value": 0.631578947368421}, {"axis": "Split Squat", "value": 0.2358490566037736}, {"axis": "Trap Bar Deadlift", "value": 0.5151515151515151}, {"axis": "Turkish Get Up", "value": 0.0}], [{"axis": "Pullup", "value": 0.3125}, {"axis": "Pushup", "value": 0.631578947368421}, {"axis": "Split Squat", "value": 0.8301886792452831}, {"axis": "Trap Bar Deadlift", "value": 0.20606060606060606}, {"axis": "Turkish Get Up", "value": 0.7096774193548387}], [{"axis": "Pullup", "value": 0.53125}, {"axis": "Pushup", "value": 0.8421052631578947}, {"axis": "Split Squat", "value": 0.660377358490566}, {"axis": "Trap Bar Deadlift", "value": 0.23030303030303031}, {"axis": "Turkish Get Up", "value": 0.7096774193548387}], [{"axis": "Pullup", "value": 0.5625}, {"axis": "Pushup", "value": 0.631578947368421}, {"axis": "Split Squat", "value": 0.22641509433962265}, {"axis": "Trap Bar Deadlift", "value": 0.07838383838383839}, {"axis": "Turkish Get Up", "value": 0.0}]]
+
+			var myData = [ data[{{clientIdx}}] ];
+			
+			////////////////////////////////////////////////////////////// 
+			//////////////////// Draw the Chart ////////////////////////// 
+			////////////////////////////////////////////////////////////// 
+
+			var color = d3.scale.ordinal()
+				.range(["#EDC951","#CC333F","#00A0B0"]);
+				
+			var radarChartOptions = {
+			  w: width,
+			  h: height,
+			  margin: margin,
+			  maxValue: 0.5,
+			  levels: 5,
+			  roundStrokes: true,
+			  color: color
+			};
+			//Call function to draw the Radar chart
+			RadarChart(".radarChart", myData, radarChartOptions);
+		</script>
+		
+{% endblock %}
+		

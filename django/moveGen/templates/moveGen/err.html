@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Error {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Error!</h1>
+<p>{{errMsg}}</p>
+<p>{{except}}</p>
+
+{% endblock %}

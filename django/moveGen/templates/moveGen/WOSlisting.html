@@ -1,0 +1,25 @@
+<!-- WOSlisting: render WOS as HTML  -->
+
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Workout Schedule Listing {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Workout Schedule [{{wosIdx}}]</h1>
+<h2 align=center>Meso: {{mesoName}} Week: {{week}} Day: {{day}}</h2>
+
+<ol>{% for exer in schedList  %}
+	<li>
+	<ul>
+		{% for k, v in exer.items %}
+		    <li>{{k}}: {{v}}</li>
+		{% endfor %}
+	</ul>
+	</li>
+	{% endfor %}
+</ol>
+
+{% endblock %}

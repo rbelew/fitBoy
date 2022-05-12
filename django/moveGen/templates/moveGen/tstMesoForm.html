@@ -1,0 +1,27 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+  {{ form.media.css }}
+  <style type="text/css">
+    select {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+<form method="post" action="">
+  {% csrf_token %}
+  {{ form }}
+  <input type="submit" value="Submit Form"/>
+</form>
+
+<script src="/static/js/jquery-3.2.1.min"></script>
+
+<script type="text/javascript">
+  window.onerror = function (msg) {
+    $("body").attr("JSError", msg);
+  }
+</script>
+{{ form.media.js }}
+</body>

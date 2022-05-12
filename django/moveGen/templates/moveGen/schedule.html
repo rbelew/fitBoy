@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load listIndex %}
+
+{% block title %} MoveGen Schedule {{ mesoName }}-{{ sched1Idx }}-{{ stype }}  {% endblock %}
+
+{% block content %}
+
+<!-- <style>
+	.hdr1 { }
+	.hdr2 { %extend td-center; bgcolor="#ffffb3"}
+	.col1 { %extend c0; bgcolor="#ecffb3"}
+	.col2 { %extend c0; bgcolor="#ffffb3"}
+</style>
+ -->
+ 
+{% if stype == "Primary" %}
+	<h1 align=center>{{ schedName }} [{{sched1Idx}}] Schedule for (Meso: {{ mesoName }} [{{ mesoIdx }}])</h1>
+	<h2 align=center><a href="/moveGen/showSchedDist/{{sched1Idx}}">Evaluate distribution</a></h2>
+			
+{% elif stype == "Secondary" %}
+	<h1 align=center>Secondary Schedule for {{ mesoName }} ({{sched2Idx}})</h1>
+	<h2 align=center>Associated with Primary Schedule ({{sched1Idx}})</h2>
+	
+	<p><a href="/moveGen/unifySched1_2/{{ sched1Idx }}_{{ sched2Idx }}/">Unify Primary and Secondary schedules</a></p>
+
+{% elif stype == "Unified" %}
+	<h1 align=center>Unified Schedule {{ schedName }} [{{sched1Idx}}, {{sched2Idx}}] for Meso {{ mesoName }} [{{ mesoIdx }}]</h1>
+
+{% elif stype == "allWOS" %}
+	<h1 align=center>Workout Schedules {{ schedName }} [{{sched1Idx}}, {{sched2Idx}}] for Meso {{ mesoName }} [{{ mesoIdx }}]</h1>
+
+{% endif %}
+<HR>
+
+<table class="table" border=2>
+
+<TR>
+  	<TH class="td-center">Week \ Session</TH>
+  
+	{% for sessionHdr in sessionHdrList %}
+		{% if stype == "Primary" or mesoAudience == 'indiv' %}
+			<TH class="td-center bg-success">{{ sessionHdr }}</TH>
+		{% else %}
+			<TH class="td-center {% cycle 'bg-success' 'bg-warning' %}">{{ sessionHdr }}</TH>
+		{% endif %}
+
+  		
+	{% endfor %}
+	
+ </TR>
+{% for week in weekList %}
+<TR>
+	<TD class="td-center">{{ forloop.counter }}</TD>
+	{% for session in week %}
+		<!-- <TD class="c0"> -->
+		{% if stype == "Primary" or mesoAudience == 'indiv'%}
+			<TD class="c0 bg-success">
+		{% else %}
+			<TD class="c0 {% cycle 'bg-success' 'bg-warning' %}">
+		{% endif %}
+		<p>{{ session|safe }}</p>
+		<p style="vertical-align:bottom; text-align:center;">
+			{% if "Assess" in session %} <p> </p>
+			{% elif stype == "Primary" %}   <a href='/moveGen/drawWOS/{{sched1Idx}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}}'>Draw Schedule</a>
+			{% elif stype == "Secondary" %} <a href='/moveGen/drawWOS/{{sched2Idx}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}}'>Draw Schedule</a>
+			{% elif stype == "Unified" %} 
+			
+				{% with day=schedIdxList|listIndex:forloop.counter0 %}
+					<!-- <p>begin {{forloop.counter0|divisibleby:2}} {{day}} </p> -->
+
+					{% if forloop.counter0|divisibleby:2 %}
+						<a href='/moveGen/drawWOS/{{sched1Idx}}_{{forloop.parentloop.counter0}}_{{day}}'>Draw Schedule</a>
+					{% else %}
+						<a href='/moveGen/drawWOS/{{sched2Idx}}_{{forloop.parentloop.counter0}}_{{day}}'>Draw Schedule</a>
+					{% endif %}
+					
+				{% endwith %}
+
+			{% endif %}
+		</p>
+		</TD>
+	{% endfor %}
+</TR>
+{% endfor %}
+</table>
+
+{% endblock %}
+

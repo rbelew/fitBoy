@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} PPrint {{meso2.audience|upper}} Meso2 {% endblock %}
+
+{% block content %}
+
+<h1 align=center>{{meso2.audience|upper}} Meso2 {{meso2.name}} ({{meso2.pk}})</h1>
+
+<style>
+/* https://stackoverflow.com/a/1713060 */
+dl {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  margin: 0
+}
+dt {
+  float: left;
+  width: 30%;
+  padding: 0;
+  margin: 0
+}
+dd {
+  float: left;
+  width: 70%;
+  padding: 0;
+  margin: 0;
+  
+  /* https://stackoverflow.com/a/12883892
+	Bootstrap's .dl-horizontal, however, lines up this elements
+	side-by-side. And when one of <dd> has no content, it's collapsed and
+	others are shifted up. (Which obviously what you don't want.) This
+	behaviour could be "fixed" like this:
+  */
+  min-height: 20px;
+}
+
+</style>
+
+<h3>General features</h3>
+
+<dl>
+	<dt>Name</dt><dd>{{meso2.name}}</dd>
+	<dt>Idx</dt><dd>{{meso2.pk}}</dd>
+	<dt>Audience</dt><dd>{{meso2.audience}}</dd>
+	<dt>Description</dt><dd> {{meso2.desc}} </dd>
+	<dt>Creation date</dt><dd>{{meso2.cdate}}</dd>
+	<dt>NWeeks</dt><dd>{{nweek}} </dd>
+	<dt>NSession</dt><dd>{{nsession}} </dd>
+	<dt>All (scheduled or not) qualities</dt><dd>{{includeQual}} </dd>
+	<dt>Excluded accessories</dt><dd>{{excludeAccry}} </dd>
+</dl>
+
+<div id='moveSeqSVG'>
+</div>
+
+<h2>Build a Schedule for this MesoCycle. </h2>
+
+	<!-- NB: no action on form; completed form also handled by same views.pprintMeso2() -->
+	<form method="post">
+	    {% csrf_token %}
+	    {{ form }}
+	    <input type="submit" value="Submit" />
+	</form>	
+
+
+<script src="{% static 'js/d3.min.js' %}"></script>
+
+<script src="{% static 'js/drawMeso.js' %}"></script>
+
+<script>
+	// global constants
+	
+	var MeasureColor = {"Assault Bike": [255, 153, 51], 
+						"Split Squat": [255,0,0],
+						"TB Deadlift": [255,255,0],
+						"Pull-Up": [164,194,244],
+						"Push-Up": [182,215,168],
+						"Turkish Get-Up" : [180,167,214],
+						"OPEN": [230,230,230], // 90% white
+						"Hip CAR": [255, 102, 204]}; 
+
+	
+	// console.log("top");
+
+
+	// var moveSched={{meso2.moveSeq|safe}};
+	
+	var moveSched = {{moveSeqStr|safe}}
+	var moveSchedStr = JSON.stringify(moveSched);
+	
+	var nsession={{nsession}};
+	var nweek={{nweek}};
+	var moveWid = {{moveWid}};
+	var moveHgt = {{moveHgt}};
+	
+	var width = nsession * moveWid;
+	var height = 2* nweek * moveHgt;
+	
+	sessionStorage.setItem('moveSched',moveSchedStr);
+	
+	var svg = d3.select('#moveSeqSVG').append('svg')
+	    .attr('width', width)
+	    .attr('height', height);
+
+	redrawMoveSched();
+</script>
+	
+{% endblock %}

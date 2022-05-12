@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load modulo %}
+
+{% block title %} DrawWOS {% endblock %}
+
+{% block content %}
+
+<!-- 
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.1.js"></script>
+ -->
+
+<script src="{% static 'js/d3.min.js' %}"></script>
+
+<h1 align=center>Draw WorkOut Schedule</h1>
+<h2	 align=center><a href='/moveGen/pprintMeso2/{{meso.idx}}'>Meso:{{meso.name}}</a></h2>
+<h2	 align=center>{{stype}} Schedule {{schedName}} [{{schedIdx}}]</h2>
+<h2	 align=center>Week:{{week|add:1}} Day:{{dayLbl}}</h2>
+
+<div id="schedContext"	>
+<h3>Program context</h3>
+<table class="table" border=4 style="font-size:10px">
+<TR>
+<!-- ASSUME Unified -->
+{% for session in dayList %}
+	<TD class="c0 {% if forloop.counter == dayIdx %} bg-primary 
+				  {% elif mesoAudience != 'indiv' and forloop.counter|modulo:2 == 0 %} bg-warning
+				  {% else %} bg-success
+				  {% endif %}">
+	<p>{{ session|safe }}</p>
+	</TD>
+{% endfor %}
+</TR>
+</table>
+</div> 
+
+<hr>
+
+<div id="formDiv">
+
+<!-- 
+<p align=center><textarea form="wosForm" name="wuAnnote" cols=70 rows=2>(type WARM-UP instructions here)</textarea></p>
+<p align=center><textarea form="wosForm" name="cdAnnote" cols=70 rows=2>(type COOL-DOWN instructions here)</textarea></p>
+ -->
+ 
+<form id="wosForm" align=center action="/moveGen/saveWOS" onsubmit="collectSched()" method="post">
+	{% csrf_token %}
+	
+     <p align=center><input type="submit" value="Save it!" 
+     		style="color:red; font-size: 18px; font-weight: bold; font-style: italic; background-color: #ffcccc; 
+    			border: 2px solid black; border-radius: 12px; width: 250px;">
+     </p>
+
+</form>
+</div>
+
+<svg id="wosketch" width="960" height="1000"></svg>
+
+<script>
+// variables initialized via django templates
+
+  var woInfo;
+  var otherInfo;
+  var schedList; 
+  
+  // enable parts of drawWOS.js  used by drawWOS
+  var vizOnly = false;
+
+	var mesoIdx = "{{meso.idx}}";
+	var week = {{week}} ;
+	var dayIdx = {{dayIdx}} ;
+	var schedIdx = {{schedIdx}} ;
+
+	woInfo = {{woExer|safe}} ;
+	otherInfo = {{otherExer|safe}} ;
+	schedList = [];
+
+</script>
+
+<script src="{% static 'js/drawWOS.js' %}"></script>
+
+
+{% endblock %}

@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Edit Movements {% endblock %}
+
+{% block content %}
+
+<script src="{% static 'js/d3.min.js' %}"></script>
+
+<h1 align=center>Edit Movements </h1>
+
+<h2 align=center>MesoSystem [ {{mesoSys.idx}} ] {{mesoSys.name}}</h2>
+
+<ul>
+<li><b>Click</b> on any node to collapse/expand its children.  
+<li><b>SHIFT-Click</b> on parent of new movement to create it, then 
+<li><b>ALT-Click</b> on the new node to give it a name.  
+<li>If you add a new top-level Movement (by SHIFT-Clicking on "Movements"),
+use the convention of 'NewQuality // NewAssessment', ie first the quality name,
+then a pair of slashes "//" then the assessment  name.  
+<li>When you're done editing, hit the <b>Preview</b> button and you'll be shown
+a preview of the list of changes to confirm them.</p>
+</ul>
+
+<form id="editMoveForm" method="post" onsubmit="collectMoves()">
+	{% csrf_token %}
+	<p align=center>MesoSystem name: <input name="msName" type="text" value="{{mesoSys.name}}"></p>
+	<p align=center><button form='editMoveForm' name="SaveMoves" onsubmit="collectMoves()" formaction="/moveGen/previewMoveEdits/{{mesoSys.idx}}/">
+		<b>Preview movement changes</b>
+	</button></p>
+</form>
+
+<div id='editMoveSVG'>
+</div>
+
+<!-- https://bl.ocks.org/mbostock/1093025 -->
+
+<style>
+
+.node rect {
+  cursor: pointer;
+  fill: #fff;
+  fill-opacity: 0.5;
+  stroke: #3182bd;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 14px sans-serif;
+  pointer-events: none;
+}
+
+ 
+.link {
+  fill: none;
+  stroke: #9ecae1;
+  stroke-width: 1.5px;
+}
+
+</style>
+
+<script>
+
+
+var margin = {top: 30, right: 20, bottom: 30, left: 20},
+    width = 960,
+    barHeight = 30,
+    barWidth = 300;
+
+var i = 0,
+    duration = 400,
+    root;
+
+var diagonal = d3.linkHorizontal()
+    .x(function(d) { return d.y; })
+    .y(function(d) { return d.x; });
+
+var svg = d3.select("#editMoveSVG").append("svg")
+    .attr("width", width) // + margin.left + margin.right)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var initMoveDict = {{moveDict|safe}};
+
+root = d3.hierarchy(initMoveDict);
+root.x0 = 0;
+root.y0 = 0;
+update(root);
+
+function update(source) {
+
+  // Compute the flattened node list.
+  var nodes = root.descendants();
+  
+  var height = Math.max(500, nodes.length * barHeight + margin.top + margin.bottom);
+
+  d3.select("svg").transition()
+      .duration(duration)
+      .attr("height", height);
+
+  d3.select(self.frameElement).transition()
+      .duration(duration)
+      .style("height", height + "px");
+
+  // Compute the "layout". TODO https://github.com/d3/d3-hierarchy/issues/67
+  var index = -1;
+  root.eachBefore(function(n) {
+    n.x = ++index * barHeight;
+    n.y = n.depth * 20;
+        
+  	if (n.id > 1000) {
+    	console.log('update1: '+n.id +' '+n.data.name);
+    }
+  });
+
+  // Update the nodes…
+  var node = svg.selectAll(".node")
+    .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      .attr("id", function(d) { return "moveG_"+d.id; })
+      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+      .style("opacity", 0);
+
+  // Enter any new nodes at the parent's previous position.
+  nodeEnter.append("rect")
+      .attr("y", -barHeight / 2)
+      .attr("height", barHeight)
+      .attr("width", barWidth)
+      .style("fill", color)
+      .on("click", click);
+
+  nodeEnter.append("text")
+      .attr("dy", 3.5)
+      .attr("dx", 5.5)
+      .text(function(d) { 
+      	if (d.id > 1000) {
+      		console.log('update nodeText: '+d.id +' '+d.data.name);
+      	}
+      return d.data.name; });
+
+  // Transition nodes to their new position.
+  nodeEnter.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+      .style("opacity", 1);
+
+  node.transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+      .style("opacity", 1)
+    .select("rect")
+      .style("fill", color);
+
+  // Transition exiting nodes to the parent's new position.
+  node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+      .style("opacity", 0)
+      .remove();
+
+  // Update the links…
+  var link = svg.selectAll(".link")
+    .data(root.links(), function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        var o = {x: source.x0, y: source.y0};
+        return diagonal({source: o, target: o});
+      })
+    .transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+  // Transition links to their new position.
+  link.transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+        var o = {x: source.x, y: source.y};
+        return diagonal({source: o, target: o});
+      })
+      .remove();
+
+  // Stash the old positions for transition.
+  root.each(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
+  });
+}
+
+function click(d) {
+	var e = d3.event;
+	
+	// SHIFT-CLICK: add child 
+	if (e.shiftKey) {
+		// console.log('shiftClick');
+		if (d.depth <= 2) {
+			addNode(d);
+		} else {
+			console.log('Cant add sub-exercises!');
+		}
+		
+	// ALT-CLICK: edit node name
+	} else if (e.altKey) {
+		// console.log('cntlClick');
+		var newName = editName(d);
+		
+	// CLICK: Show/hide children
+	} else {
+	  if (d.children) {
+	    d._children = d.children;
+	    d.children = null;
+	  } else {
+	    d.children = d._children;
+	    d._children = null;
+	  }
+  
+  }
+  update(d);
+}
+
+function color(d) {
+  return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+}
+
+function addNode(parent) {
+	// https://stackoverflow.com/questions/43140325/add-node-to-d3-tree-v4
+	//Adding a new node (as a child) to selected Node (code snippet)
+	
+	var ptype;
+	var mtypeStr; 
+	switch(parent.depth) {
+		case 0: 
+			ptype = 'A NewQuality // NewAssessment (alt-click to edit name)';
+			mtypeStr = 'Measure';
+			break;
+		case 1: 
+			ptype = 'A new ACCESSORY for ' + parent.data.name + '  (alt-click to edit name)'; 
+			mtypeStr = 'Accessory';
+			break;
+		case 2: 
+			ptype = 'A new EXERCISE for '  + parent.data.name + '  (alt-click to edit name)'; 
+			mtypeStr = 'Exercise';
+			break;
+	};
+
+	// inputForm = promptForName(parent);
+	
+	var newNode = {
+	    name: ptype ,
+	    mtype: mtypeStr,
+	    children: []
+	  };
+	  //Creates a Node from newNode object using d3.hierarchy(.)
+	  var newNode = d3.hierarchy(newNode);
+	
+	  //later added some properties to Node like child,parent,depth
+	  newNode.depth = parent.depth + 1; 
+	  newNode.height = parent.height - 1;
+	  newNode.parent = parent; 
+	  newNode.id = Date.now();
+	  
+	  // HACK: use negative idx to flag new nodes
+	  newNode.data.idx = -newNode.id
+	  newNode.data.pidx = parent.data.idx
+	
+	  //Selected is a node, to which we are adding the new node as a child
+	  //If no child array, create an empty array
+	  if(!parent.children){
+	    parent.children = [];
+	    parent.data.children = [];
+	  }
+	
+	  //Push it to parent.children array  
+	  parent.children.push(newNode);
+	  parent.data.children.push(newNode.data);
+	  
+	  parent.sort(function(a, b) { 
+					var rv;
+					var aname = a.data.name.toUpperCase();
+					var bname = b.data.name.toUpperCase();
+				  	if (aname < bname) {rv = -1;}
+				  	else if (aname > bname) {rv = 1;}
+				  	else {rv=0};
+				  	if (rv==1) console.log('sort: a='+aname+'\n\tb='+bname+'\n\trv='+rv);
+					return rv;
+					})
+
+      console.log('addNode: '+newNode.id +' '+ newNode.data.name);
+	
+	  //Update tree
+	  update(parent);
+  }
+ 
+function editName(d) {
+	// http://bl.ocks.org/GerHobbelt/2653660
+    // inject a HTML form to edit content 
+
+	// var parDOM = d3.select('svg');
+	// var parDOM = $('#editMoveSVG')[0]
+	var parGID = "#moveG_"+d.id;
+	var parDOM = d3.select(parGID);
+	
+	var parent = d.parent;
+	
+    var frm = parDOM.append("foreignObject");
+
+    var inp = frm
+        .attr("x", barWidth+20)
+        .attr("y", 0)
+        .attr("width", 300)
+        .attr("height", 25)
+        .append("xhtml:form")
+                .append("input")
+                    .attr("value", function() {
+                        // nasty spot to place this call, but here we are sure that the <input> tag is available
+                        // and is handily pointed at by 'this':
+                        this.focus();
+
+                        return d.data.name;
+                    })
+					// NB: width needs to > all text, or it disappears!?
+                    .attr("style", "width: 500px;")
+                    
+                    // make the form go away when hit ENTER:
+
+                    .on("keypress", function() {
+                        // console.log("keypress", this, arguments);
+                        
+                        var ev = d3.event;
+                        if (ev.keyCode == 13)
+                        {
+                            if (typeof(ev.cancelBubble) !== 'undefined') // IE
+                              ev.cancelBubble = true;
+                            if (ev.stopPropagation)
+                              ev.stopPropagation();
+                            ev.preventDefault();
+
+                            var txt = inp.node().value;
+
+							d.data.name = txt;
+							
+                            // odd. Should work in Safari, but the debugger crashes on this instead.
+                            // Anyway, it SHOULD be here and it doesn't hurt otherwise.
+                            
+                            parDOM.select("foreignObject").remove();
+                            
+                      	    parent.sort(function(a, b) { 
+			          					var rv;
+			          					var aname = a.data.name.toUpperCase();
+			          					var bname = b.data.name.toUpperCase();
+			          				  	if (aname < bname) {rv = -1;}
+			          				  	else if (aname > bname) {rv = 1;}
+			          				  	else {rv=0};
+			          				  	if (rv==1) console.log('sort: a='+aname+'\n\tb='+bname+'\n\trv='+rv);
+			          					return rv;
+			          					})
+
+      						console.log('editName: '+d.id +' '+ d.data.name);
+                            update(parent);
+                                                        
+                        }
+                    });
+           }
+
+function collectMoves() {
+
+	// var formd3 = d3.select('#editMoveForm');
+	// NB: using jquery to select form?!
+	var formjq = $('#editMoveForm');
+ 
+	var nodeDictStr = JSON.stringify(root.data);
+	var input = document.createElement("input");
+	input.type = "hidden";
+	input.name = "newMoves";
+	input.value = nodeDictStr;
+	var formjq = $('#editMoveForm');
+	// NB: hack to be able to drop input into correct spot?!
+	formjq[0].append(input); 
+	
+	console.log('done'); 
+} 
+     
+</script>
+
+{% endblock %}
+

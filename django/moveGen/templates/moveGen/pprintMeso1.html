@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} PPrint Meso {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Meso {{meso.name}} ({{meso.pk}})</h1>
+
+<h2>Build a Schedule for this MesoCycle. </h2>
+
+	<!-- NB: no action on form; completed form also handled by same views.pprintMeso() -->
+	<form method="post">
+	    {% csrf_token %}
+	    {{ form }}
+	    <input type="submit" value="Submit" />
+	</form>	
+
+<HR>
+
+<h3>General features</h3>
+<dl>
+	<dt>Name</dt><dd>{{meso.name}}</dd>
+	<dt>Idx</dt><dd>{{meso.pk}}</dd>
+	<dt>Description</dt><dd>{{meso.desc}}</dd>
+	<dt>Creation date</dt><dd>{{meso.cdate}}</dd>
+	<dt>NWeeks</dt><dd>{{meso.nweek}}</dd>
+	<dt>Assessment week</dt><dd>{{meso.assessWeek}}</dd>
+	<dt>Required measures</dt><dd>{{reqMeasNames}}</dd>
+</dl>
+
+<h3><em>{{moveSeqName}} ({{moveSeqPK}})</em>  Movement sequence</h3>
+
+<div id="ppmoveSeq">{{ppMoveSeq|safe}}</div>
+
+
+<h3><em>{{cardioPatName}} ({{cardioPatPK}}) </em> Cardio pattern</h3>
+
+<div id="cardioPat">{{cardioPat|safe}}</div>
+	
+{% endblock %}

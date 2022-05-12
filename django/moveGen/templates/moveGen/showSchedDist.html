@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Schedule Distribution {% endblock %}
+
+{% block content %}
+
+<style> right {float: right}​ </style>
+<h1 align=center><a href="/moveGen/primarySched/{{schedIdx}}">Primary Schedule {{schedName}} [{{schedIdx}}]<br> Distribution</a></h1>
+
+<h2 align=center>Distribution entropy={{e}}</h2>
+<table align=center border=2>
+<tr><th>Movement</th><th>Freq</th></tr>
+
+{% for line in outFreq  %}
+	<tr><span class="right"><td>{{line.0|safe}}</td></span><td>{{line.1}}</td></tr>
+{% endfor %}
+
+</table>
+
+{% endblock %}

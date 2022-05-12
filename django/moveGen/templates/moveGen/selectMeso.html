@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} Select MesoCycle {% endblock %}
+
+{% block content %}
+
+<h1 align=center>Select MesoCycle </h1>
+    {% if form.errors %}
+        <p style="color: red;">
+            Please correct the error{{ form.errors|pluralize }} below.
+        </p>
+    {% endif %}
+<center>
+
+<p>Pick a MesoCycle from which to build a Schedule, then hit <b>Submit</b>!</p>
+<p>
+    <form action="" method="post">{% csrf_token %}
+        <table>
+            {{ form.as_table }}
+        </table>
+        
+        <input type="submit" value="Submit query">
+    </form>
+</center>
+
+{% endblock %}

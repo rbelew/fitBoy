@@ -1,0 +1,93 @@
+<!-- WOSgraphic: render WOS graphically, like white board 
+
+Subset of drawWOS.html
+
+ -->
+ 
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %} WOS-graphic{% endblock %}
+
+{% block content %}
+
+<script src="{% static 'js/d3.min.js' %}"></script>
+
+
+<link href="{% static 'css/bootstrap-rating.css' %}" rel="stylesheet">
+
+<style> .largeRed { font-size: 3em; color: red} </style>
+
+<h1 align=center>Workout Schedule [{{wosIdx}}]</h1>
+<h2	 align=center>{{stype}} Schedule {{schedName}} [{{schedIdx}}]</h2>
+<h2	 align=center>Meso:{{mesoName}} Week:{{week|add:"1"}} Day:{{dayLbl}}</h2>
+
+<hr>
+
+<div id="sketchDiv">
+<form id="wosEvalForm" action="/moveGen/showWOS/{{wosIdx}}/" onsubmit="collectWOSEval()" method="post" align=right>
+    {% csrf_token %}
+	How'd this Workout work out?<br>
+	<input id="wosEval" type="hidden" class="rating" 
+			data-filled="glyphicon glyphicon-heart largeRed" 
+			data-empty="glyphicon glyphicon-heart-empty largeRed" /><br>
+	<input id="wosComment" type="text" value="(any comments?)" style="width:220px; height:100px"/><br>
+    <input type="submit" value="Submit" />
+</form>
+<p align=center>
+
+</p>
+
+<svg id="wosketch" width="960" height="1000"></svg>
+
+
+</div>
+
+<script type="text/javascript" src="{% static 'js/bootstrap-rating.min.js' %}"></script>
+
+<script>
+
+  var woInfo;
+  var otherInfo;
+  var schedList; 
+  // disable parts of drawWOS.js  used by drawWOS
+  var vizOnly = true;
+  
+  // variables initialized via django templates
+
+  var wosIdx = {{wosIdx}};
+  var mesoName = "{{mesoName}}";
+  var week = {{week}};
+  var schedIdx = {{schedIdx}};
+  var schedName = "{{schedName}}";
+  var dayLbl = "{{dayLbl}}";
+  var stype = "{{stype}}";
+
+  // variables with different values in drawWOS.html and WOSgraphic.html
+  woInfo = [];
+  otherInfo = [];
+  schedList = {{schedList|safe}};
+
+  function collectWOSEval() {
+	  input = document.createElement("input");
+	  input.type = "hidden";
+	  input.name = "wosEval";
+	  input.value = wosEval.value;
+	  $('#wosEvalForm').append(input);
+	
+	  input = document.createElement("input");
+	  input.type = "hidden";
+	  input.name = "wosComment";
+	  input.value = wosComment.value;
+	  $('#wosEvalForm').append(input);
+	  
+	  // console.log('collectWOSEval: ' + wosEval);	
+  }
+  
+</script>
+
+<script src="{% static 'js/drawWOS.js' %}"></script>
+
+
+{% endblock %}
